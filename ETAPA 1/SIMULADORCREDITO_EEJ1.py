@@ -1,23 +1,23 @@
 run = True
 
     #Capacidad de pago
-def payAbility(Income, Expense):
+'''def payAbility(Income, Expense):
     pA = Income - Expense
-    return pA
+    return pA'''
 
     #valor de la cuota 
-def feeValue(credit, anualRate, fees):
+'''def feeValue(credit, anualRate, fees):
     if fees <= 0:
         raise ValueError("Número de cuotas inválido")
     monthlyRate = (1 + anualRate)**(1/12) - 1
     return credit * (monthlyRate * (1 + monthlyRate)**fees) / ((1 + monthlyRate)**fees - 1)
-
+'''
 
 
     #porcentaje de endeudamiento
-def debtPercent(fee, income):
+'''def debtPercent(fee, income):
     dP = round((fee/income)*100,2) 
-    return dP 
+    return dP '''
 
 def rates(creditHistory):
     rates = {
@@ -29,10 +29,10 @@ def rates(creditHistory):
 
     
 
-def loanTotal(feeNumber, CreditValue, fV):
+'''def loanTotal(feeNumber, CreditValue, fV):
     totalPaid = round(fV * feeNumber,2)
     totalInterest = round(totalPaid - CreditValue,2)
-    return totalPaid, totalInterest
+    return totalPaid, totalInterest'''
 
 def debtorMesagge(name, record, dP, creditHistory, fV, rt, totalPaid, totalInterest):
     debtorMsg = {
@@ -71,16 +71,33 @@ def recordStatus(isApproved, creditHistory, feeNumber):
 
     return 'Aprobado'   
 
+def financialAnalysis(monthlyIncome, monthlyExpense, CreditValue, fees, anualRate ):
+    #capacidad de pago 
+    payAbility = monthlyIncome - monthlyExpense
+
+    #valor de la cuota 
+    if fees <= 0:
+        raise ValueError("Número de cuotas inválido")
+    monthlyRate = (1 + anualRate)**(1/12) - 1
+    feeValue = round(CreditValue * (monthlyRate * (1 + monthlyRate)**fees) / ((1 + monthlyRate)**fees - 1),2)
+
+    #porcentaje de endeudamiento
+    debtPercent = round((fees/monthlyIncome)*100,2) 
+
+    #total del prestamo 
+    totalPaid = round(feeValue * fees,2)
+    totalInterest = round(totalPaid - CreditValue,2)
+
+    return payAbility, feeValue, debtPercent, totalPaid, totalInterest
+
+
 
 def evaluate(name, monthlyIncome, monthlyExpense, CreditValue, feeNumber, creditHistory):
     rt = rates(creditHistory)
     if rt is None:
         return {'Estado': 'Error', 'Nota': 'Historial inválido'}
 
-    pA = payAbility(monthlyIncome, monthlyExpense)
-    fV = round(feeValue(CreditValue, rt, feeNumber), 2)
-    dP = debtPercent(fV, monthlyIncome)
-    totalPaid, totalInterest = loanTotal(feeNumber, CreditValue, fV)
+    pA, fV, dP, totalPaid, totalInterest = financialAnalysis(monthlyIncome, monthlyExpense, CreditValue, feeNumber, rt)
 
     if fV > pA:
         record = 'Rechazado'
