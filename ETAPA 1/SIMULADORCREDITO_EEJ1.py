@@ -1,23 +1,5 @@
 run = True
 
-    #Capacidad de pago
-'''def payAbility(Income, Expense):
-    pA = Income - Expense
-    return pA'''
-
-    #valor de la cuota 
-'''def feeValue(credit, anualRate, fees):
-    if fees <= 0:
-        raise ValueError("Número de cuotas inválido")
-    monthlyRate = (1 + anualRate)**(1/12) - 1
-    return credit * (monthlyRate * (1 + monthlyRate)**fees) / ((1 + monthlyRate)**fees - 1)
-'''
-
-
-    #porcentaje de endeudamiento
-'''def debtPercent(fee, income):
-    dP = round((fee/income)*100,2) 
-    return dP '''
 
 def rates(creditHistory):
     rates = {
@@ -26,13 +8,6 @@ def rates(creditHistory):
         'malo': 0.35
     }
     return rates.get(creditHistory.lower())
-
-    
-
-'''def loanTotal(feeNumber, CreditValue, fV):
-    totalPaid = round(fV * feeNumber,2)
-    totalInterest = round(totalPaid - CreditValue,2)
-    return totalPaid, totalInterest'''
 
 def debtorMesagge(name, record, dP, creditHistory, fV, rt, totalPaid, totalInterest):
     debtorMsg = {
@@ -48,32 +23,59 @@ def debtorMesagge(name, record, dP, creditHistory, fV, rt, totalPaid, totalInter
                             }
     return debtorMsg
 
-def approvalRules(creditHistory, dP, feeNumber):
-    history = creditHistory.upper()
-
-    if history == 'BUENO':
-        return dP <= 35
-
-    if history == 'REGULAR':
-        if feeNumber > 24:
-            return dP <= 25
-        return dP <= 25
-
-    if history == 'MALO':
-        return dP <= 15
+#Entre más alto, menos riesgo para el banco.
+#Entre más bajo, más probabilidad de rechazo.
+def score(creditHistory, debtPercent, fees, coverageRatio):
+    total_score = 0 
+    if creditHistory == 'bueno':
+        total_score = total_score + 40 
+    elif creditHistory == 'regular': 
+        total_score = total_score + 20 
+    elif creditHistory == 'malo':
+        total_score = total_score - 10
     
-def recordStatus(isApproved, creditHistory, feeNumber):
-    if not isApproved:
-        return 'Rechazado'
+    if debtPercent <= 25:
+        total_score = total_score + 30
+    
+    elif debtPercent > 25 and debtPercent <= 40: 
+        total_score = total_score + 15
+    
+    elif debtPercent >= 41: 
+        total_score = total_score - 10
+    
+    if coverageRatio >= 2: 
+        total_score += 20 
+    elif coverageRatio >= 1.1 and coverageRatio < 2: 
+        total_score += 10
+    elif coverageRatio < 1: 
+        total_score += 0 
+    
+    if fees <= 12: 
+        total_score += 10 
+    elif fees >= 13 and fees <= 36: 
+        total_score += 5 
+    elif fees > 36: 
+        total_score += 0 
 
-    if creditHistory.upper() == 'REGULAR' and feeNumber > 24:
+
+    return max(0, min(100, total_score))
+
+
+    
+def recordStatus(isApproved):
+    if isApproved >= 70:
+        return 'Aprobado'
+
+    elif isApproved >=50 and isApproved <70:
         return 'Aprobado con advertencia'
 
-    return 'Aprobado'   
+    elif isApproved < 50: 
+        return 'Rechazado'   
 
 def financialAnalysis(monthlyIncome, monthlyExpense, CreditValue, fees, anualRate ):
     #capacidad de pago 
     payAbility = monthlyIncome - monthlyExpense
+    
 
     #valor de la cuota 
     if fees <= 0:
@@ -82,13 +84,15 @@ def financialAnalysis(monthlyIncome, monthlyExpense, CreditValue, fees, anualRat
     feeValue = round(CreditValue * (monthlyRate * (1 + monthlyRate)**fees) / ((1 + monthlyRate)**fees - 1),2)
 
     #porcentaje de endeudamiento
-    debtPercent = round((fees/monthlyIncome)*100,2) 
+    debtPercent = round((feeValue/monthlyIncome)*100,2) 
 
     #total del prestamo 
     totalPaid = round(feeValue * fees,2)
     totalInterest = round(totalPaid - CreditValue,2)
 
-    return payAbility, feeValue, debtPercent, totalPaid, totalInterest
+    coverage_ratio = payAbility / feeValue
+
+    return payAbility, feeValue, debtPercent, totalPaid, totalInterest, coverage_ratio
 
 
 
@@ -97,13 +101,14 @@ def evaluate(name, monthlyIncome, monthlyExpense, CreditValue, feeNumber, credit
     if rt is None:
         return {'Estado': 'Error', 'Nota': 'Historial inválido'}
 
-    pA, fV, dP, totalPaid, totalInterest = financialAnalysis(monthlyIncome, monthlyExpense, CreditValue, feeNumber, rt)
+    pA, fV, dP, totalPaid, totalInterest, cR = financialAnalysis(monthlyIncome, monthlyExpense, CreditValue, feeNumber, rt)
 
     if fV > pA:
         record = 'Rechazado'
     else:
-        approved = approvalRules(creditHistory, dP, feeNumber)
-        record = recordStatus(approved, creditHistory, feeNumber)
+        #approved = approvalRules(creditHistory, dP, feeNumber)
+        final_score = score(creditHistory, dP, feeNumber, cR)
+        record = recordStatus(final_score)
 
     result = debtorMesagge(
         name, record, dP, creditHistory, fV, rt, totalPaid, totalInterest
@@ -143,12 +148,12 @@ while run:
     print("Resultado de evaluación")
     print("-" * 30)
     result = evaluate(modifyName, monthlyIncome, monthlyExpense, CreditValue, feeNumber,creditHistory)
-    if result['Estado'] == 'Aprobado':
-        for k, v in result.items():
-            print(f"{k:<15}: {v}")
-    elif result['Estado'] == 'Rechazado':
-        for k, v in result.items():
-            print(f"{k:<15}: {v}")
+    print("-" * 30)
+    for k, v in result.items():
+        print(f"{k:<20}: {v}")
+    print("-" * 30)
+
+
     
     
     
